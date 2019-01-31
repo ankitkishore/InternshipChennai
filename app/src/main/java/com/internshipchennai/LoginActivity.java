@@ -1,13 +1,16 @@
 package com.internshipchennai;
 
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -24,94 +27,92 @@ import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
 
-    EditText editTextUsername, editTextPassword;
-    ProgressBar progressBar;
+    private EditText editTextUsername, editTextPassword;
+    private Button buttonLogin;
+    private TextView textViewRegister;
+    private ProgressDialog progressDialog;
+    private String usertype;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        editTextUsername = (EditText) findViewById(R.id.editTextUsername);
-        editTextPassword = (EditText) findViewById(R.id.editTextPassword);
-        progressBar = findViewById(R.id.progressBar);
+        SharedPreferences sharedPreferences = this.getSharedPreferences("mysharedpref12", Context.MODE_PRIVATE);
+        usertype = sharedPreferences.getString("usertype","");
 
-        if (SharedPrefManager.getInstance(this).isLoggedIn()) {
+        if(SharedPrefManager.getInstance(this).isLoggedIn()){
             finish();
-            startActivity(new Intent(this, MainActivity.class));
+            if(usertype.equals("Admin")){
+                startActivity(new Intent(this, AdminActivity.class));
+            }else{
+                startActivity(new Intent(this, UserActivity.class));
+            }
+            return;
         }
 
-        //if user presses on login
-        //calling the method login
-        findViewById(R.id.buttonLogin).setOnClickListener(new View.OnClickListener() {
+        textViewRegister = findViewById(R.id.textViewRegister);
+        editTextUsername = (EditText) findViewById(R.id.editTextUsername);
+        editTextPassword = (EditText) findViewById(R.id.editTextPassword);
+        buttonLogin = (Button) findViewById(R.id.buttonLogin);
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Please wait...");
+
+        textViewRegister.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(LoginActivity.this,SignUp.class));
+            }
+        });
+        buttonLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 userLogin();
             }
         });
 
-        //if user presses on not registered
-        findViewById(R.id.textViewRegister).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //open register screen
-                finish();
-                //startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
     }
 
-
     private void userLogin() {
-        //first getting the values
-        final String username = editTextUsername.getText().toString();
-        final String password = editTextPassword.getText().toString();
-        //validating inputs
-        if (TextUtils.isEmpty(username)) {
-            editTextUsername.setError("Please enter your username");
-            editTextUsername.requestFocus();
-            return;
-        }
+        final String username = editTextUsername.getText().toString().trim();
+        final String password = editTextPassword.getText().toString().trim();
 
-        if (TextUtils.isEmpty(password)) {
-            editTextPassword.setError("Please enter your password");
-            editTextPassword.requestFocus();
-            return;
-        }
+        Log.e("yo" , username);
+        progressDialog.show();
 
-        //if everything is fine
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, URLs.URL_LOGIN,
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.POST,
+                Constants.URL_LOGIN,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        progressBar.setVisibility(View.GONE);
-
+                        progressDialog.dismiss();
+                        Log.e("yo", "response"+ response);
                         try {
-                            //converting response to json object
                             JSONObject obj = new JSONObject(response);
-
-                            //if no error in response
                             if (!obj.getBoolean("error")) {
-                                Toast.makeText(getApplicationContext(), obj.getString("message"), Toast.LENGTH_SHORT).show();
-
-                                //getting the user from the response
-                                JSONObject userJson = obj.getJSONObject("user");
-
-                                //creating a new user object
-                                User user = new User(
-                                        userJson.getInt("id"),
-                                        userJson.getString("username"),
-                                        userJson.getString("email"),
-                                        userJson.getString("gender")
-                                );
-
-                                //storing the user in shared preferences
-                                SharedPrefManager.getInstance(getApplicationContext()).userLogin(user);
-                                //starting the profile activity
-                                finish();
-                                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                                SharedPrefManager.getInstance(getApplicationContext())
+                                        .userLogin(
+                                                obj.getInt("id"),
+                                                obj.getString("username"),
+                                                obj.getString("email"),
+                                                obj.getString("user")
+                                        );
+                                if (obj.getString("user").equals("Admin"))
+                                {
+                                    startActivity(new Intent(getApplicationContext(), AdminActivity.class));
+                                    finish();
+                                }else{
+                                    startActivity(new Intent(getApplicationContext(), UserActivity.class));
+                                    finish();
+                                }
                             } else {
-                                Toast.makeText(getApplicationContext(), obj.getString("message"), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(
+                                        getApplicationContext(),
+                                        obj.getString("message"),
+                                        Toast.LENGTH_LONG
+                                ).show();
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -121,11 +122,16 @@ public class LoginActivity extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+                        progressDialog.dismiss();
 
+                        Toast.makeText(
+                                getApplicationContext(),
+                                error.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show();
                     }
-                })
-        {
+                }
+        ) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<>();
@@ -133,10 +139,9 @@ public class LoginActivity extends AppCompatActivity {
                 params.put("password", password);
                 return params;
             }
+
         };
 
-        VolleySingleton.getInstance(this).addToRequestQueue(stringRequest);
+        RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
     }
-
-
 }

@@ -1,23 +1,28 @@
 package com.internshipchennai;
 
 import android.content.Context;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
-public class VolleySingleton {
-    private static VolleySingleton mInstance;
+/**
+ * Created by Belal on 26/11/16.
+ */
+
+public class RequestHandler {
+    private static RequestHandler mInstance;
     private RequestQueue mRequestQueue;
     private static Context mCtx;
 
-    private VolleySingleton(Context context) {
+    private RequestHandler(Context context) {
         mCtx = context;
         mRequestQueue = getRequestQueue();
     }
 
-    public static synchronized VolleySingleton getInstance(Context context) {
+    public static synchronized RequestHandler getInstance(Context context) {
         if (mInstance == null) {
-            mInstance = new VolleySingleton(context);
+            mInstance = new RequestHandler(context);
         }
         return mInstance;
     }
@@ -34,4 +39,5 @@ public class VolleySingleton {
     public <T> void addToRequestQueue(Request<T> req) {
         getRequestQueue().add(req);
     }
+
 }

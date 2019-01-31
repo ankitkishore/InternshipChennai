@@ -1,6 +1,5 @@
 package com.internshipchennai;
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,18 +12,20 @@ import android.content.SharedPreferences;
 
 public class SharedPrefManager {
 
-    //the constants
-    private static final String SHARED_PREF_NAME = "simplifiedcodingsharedpref";
-    private static final String KEY_USERNAME = "keyusername";
-    private static final String KEY_EMAIL = "keyemail";
-    private static final String KEY_GENDER = "keygender";
-    private static final String KEY_ID = "keyid";
-
     private static SharedPrefManager mInstance;
     private static Context mCtx;
 
+    private static final String SHARED_PREF_NAME = "mysharedpref12";
+    private static final String KEY_USERNAME = "username";
+    private static final String KEY_USER_EMAIL = "useremail";
+    private static final String KEY_USER_ID = "userid";
+    private static final String KEY_USER_TYPE = "usertype";
+
+
+
     private SharedPrefManager(Context context) {
         mCtx = context;
+
     }
 
     public static synchronized SharedPrefManager getInstance(Context context) {
@@ -34,41 +35,46 @@ public class SharedPrefManager {
         return mInstance;
     }
 
-    //method to let the user login
-    //this method will store the user data in shared preferences
-    public void userLogin(User user) {
+    public boolean userLogin(int id, String username, String email,String user){
+
         SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(KEY_ID, user.getId());
-        editor.putString(KEY_USERNAME, user.getUsername());
-        editor.putString(KEY_EMAIL, user.getEmail());
-        editor.putString(KEY_GENDER, user.getGender());
+
+        editor.putInt(KEY_USER_ID, id);
+        editor.putString(KEY_USER_EMAIL, email);
+        editor.putString(KEY_USERNAME, username);
+        editor.putString(KEY_USER_TYPE, user);
+
         editor.apply();
+
+        return true;
     }
 
-    //this method will checker whether user is already logged in or not
-    public boolean isLoggedIn() {
+    public boolean isLoggedIn(){
         SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
-        return sharedPreferences.getString(KEY_USERNAME, null) != null;
+        if(sharedPreferences.getString(KEY_USERNAME, null) != null){
+            return true;
+        }
+        return false;
     }
 
-    //this method will give the logged in user
-    public User getUser() {
-        SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
-        return new User(
-                sharedPreferences.getInt(KEY_ID, -1),
-                sharedPreferences.getString(KEY_USERNAME, null),
-                sharedPreferences.getString(KEY_EMAIL, null),
-                sharedPreferences.getString(KEY_GENDER, null)
-        );
-    }
 
-    //this method will logout the user
-    public void logout() {
+    public boolean logout(){
         SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();
-        mCtx.startActivity(new Intent(mCtx, LoginActivity.class));
+        return true;
+    }
+
+
+    public String getUsername(){
+        SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getString(KEY_USERNAME, null);
+    }
+
+    public String getUserEmail(){
+        SharedPreferences sharedPreferences = mCtx.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getString(KEY_USER_EMAIL, null);
     }
 }
